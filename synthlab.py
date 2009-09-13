@@ -162,16 +162,30 @@ class Module(MTSvg):
             self.mode = 'move'
             return True
 
-
+class MasterControls(MTBoxLayout):
+    def __init__(self, **kwargs):
+        super(MasterControls,self).__init__(**kwargs)
+        self.volume = MTSlider(min = 0, max = 1, height = 200)
+        self.dspactive = MTToggleButton(label = 'DSP', size = (50,50))
+        @self.volume.event
+        def on_value_change(value):
+            osc.sendMsg("/master/volume", [value], host, port)
+        @self.dspactive.event
+        def on_press(value):
+            if self.dspactive.state == 'down':
+                osc.sendMsg("/master/dspactive", [1], host, port)
+            else:
+                osc.sendMsg("/master/dspactive", [0], host, port)
+        
+        self.add_widget(self.volume)
+        self.add_widget(self.dspactive)
+    
 workspace = Workspace(do_rotation = False, auto_bring_to_front = False)
 
 w = MTWindow(style = {'bg-color': (0,0,0,1)})
 w.add_widget(workspace)
-m = MTSlider(min = 0, max = 1)
-w.add_widget(m)
-@m.event
-def on_value_change(value):
-    print value
-    osc.sendMsg("/master/volume", [value], host, port)
+mc = MasterControls(pos = (2,2), spacing = 4)
+w.add_widget(mc)
+
 
 runTouchApp()
