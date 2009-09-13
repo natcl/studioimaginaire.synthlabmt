@@ -18,11 +18,6 @@ class Workspace(MTScatterPlane):
                         Module(filename = 'icons/sl-lfo+.svg', category = 'controller', instance = 1)]
         for m in self.modules:
             self.add_widget(m)
-    def on_touch_move(self, touch):
-        super(Workspace,self).on_touch_move(touch)
-        print touch.sx
-        osc.sendMsg("/freq", [int(touch.x)], host, port)
-        return True
         
 class Module(MTSvg):
     def __init__(self, **kwargs):
@@ -172,6 +167,11 @@ workspace = Workspace(do_rotation = False, auto_bring_to_front = False)
 
 w = MTWindow(style = {'bg-color': (0,0,0,1)})
 w.add_widget(workspace)
-#w.add_widget(MTSlider())
+m = MTSlider(min = 0, max = 1)
+w.add_widget(m)
+@m.event
+def on_value_change(value):
+    print value
+    osc.sendMsg("/master/volume", [value], host, port)
 
 runTouchApp()
