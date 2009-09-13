@@ -17,7 +17,12 @@ class Workspace(MTScatterPlane):
                         Module(filename = 'icons/sl-distort+.svg', category = 'effect', instance = 1),
                         Module(filename = 'icons/sl-lfo+.svg', category = 'controller', instance = 1)]
         for m in self.modules:
-            self.add_widget(m)        
+            self.add_widget(m)
+    def on_touch_move(self, touch):
+        super(Workspace,self).on_touch_move(touch)
+        print touch.sx
+        osc.sendMsg("/freq", [int(touch.x)], host, port)
+        return True
         
 class Module(MTSvg):
     def __init__(self, **kwargs):
@@ -86,7 +91,7 @@ class Module(MTSvg):
             return False
         
     def on_touch_down(self, touch):
-        # Delete connections
+        #Delete connections
         if touch.is_double_tap:
             for connection in self.signal_connections:
                 x1,y1,x2,y2 = self.return_connection_coordinates(connection, type='signal')

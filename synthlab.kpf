@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Komodo Project File - DO NOT EDIT -->
+<project id="75e041c5-c3c5-9347-b762-e9b452fdbaf0" kpf_version="4" name="synthlab.kpf">
+<livefolder id="25bce26d-2ebb-6246-bfc4-2bc8b1b292c7" idref="75e041c5-c3c5-9347-b762-e9b452fdbaf0" name="synthlabmt" url="">
+</livefolder>
+<preference-set idref="75e041c5-c3c5-9347-b762-e9b452fdbaf0">
+  <boolean id="import_live">0</boolean>
+</preference-set>
+</project>
