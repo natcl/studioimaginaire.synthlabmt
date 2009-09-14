@@ -10,14 +10,16 @@ class Workspace(MTScatterPlane):
     def __init__(self, **kwargs):
         super(Workspace,self).__init__( **kwargs)
         osc.init()
-        self.modules = [Module(filename = 'icons/sl-addSynth+.svg', category = 'source', instance = 1),
-                        Module(filename = 'icons/sl-addSynth+.svg', category = 'source', instance = 2),
-                        Module(filename = 'icons/sl-speaker.svg', category = 'output', instance = 1),
-                        Module(filename = 'icons/sl-speaker.svg', category = 'output', instance = 2),
-                        Module(filename = 'icons/sl-distort+.svg', category = 'effect', instance = 1),
-                        Module(filename = 'icons/sl-lfo+.svg', category = 'controller', instance = 1)]
-        for m in self.modules:
-            self.add_widget(m)
+        self.modules = []
+        #self.modules = [Module(filename = 'icons/sl-addSynth+.svg', category = 'source', instance = 1),
+        #                Module(filename = 'icons/sl-addSynth+.svg', category = 'source', instance = 2),
+        #                Module(filename = 'icons/sl-speaker.svg', category = 'output', instance = 1),
+        #                Module(filename = 'icons/sl-speaker.svg', category = 'output', instance = 2),
+        #                Module(filename = 'icons/sl-distort+.svg', category = 'effect', instance = 1),
+        #                Module(filename = 'icons/sl-lfo+.svg', category = 'controller', instance = 1)]
+        #for m in self.modules:
+        #    self.add_widget(m)
+        
         
 class Module(MTSvg):
     def __init__(self, **kwargs):
@@ -161,6 +163,49 @@ class Module(MTSvg):
             self.touchstarts.remove(touch.id)
             self.mode = 'move'
             return True
+        
+class ModulePick(MTSvg):
+    def __init__(self, **kwargs):
+        super(ModulePick,self).__init__(**kwargs)
+        self.workspace_cb = kwargs.get('workspace_cb')
+        self.category = kwargs.get('category')
+        self.touchstarts = [] # only react to touch input that originated on this widget
+        self.drag_x = 0
+        self.drag_y = 0
+        self.original_pos = self.pos
+        self.instance_count = 1
+        
+        self.icons = {'source':'icons/sl-addSynth+.svg', 'effect':'icons/sl-distort+.svg', 'controller':'icons/sl-lfo+.svg', 'output':'icons/sl-speaker.svg'}
+        
+    def draw(self):      
+        super(ModulePick, self).draw()
+        
+    def on_touch_down(self, touch):        
+        if self.collide_point(touch.x,touch.y):
+            self.touchstarts.append(touch.id)
+            self.first_x = touch.x
+            self.first_y = touch.y
+            self.first_pos_x = self.x
+            self.first_pos_y = self.y
+            return True
+        
+    def on_touch_move(self, touch):
+        if touch.id in self.touchstarts:
+            delta_x = touch.x - self.first_x
+            delta_y = touch.y - self.first_y
+            self.x = self.first_pos_x + delta_x
+            self.y = self.first_pos_y + delta_y
+            return True
+            
+    def on_touch_up(self, touch):                     
+        if touch.id in self.touchstarts:
+            self.workspace_cb.modules.append(Module(pos = (touch.x, touch.y), filename = self.icons[self.category], category = self.category, instance = self.instance_count))
+            self.workspace_cb.add_widget(self.workspace_cb.modules[len(self.workspace_cb.modules)-1])
+            osc.sendMsg("/create", [self.category, self.instance_count], host, port)
+            self.pos = self.original_pos
+            self.instance_count += 1
+            self.touchstarts.remove(touch.id)
+            return True
 
 class MasterControls(MTBoxLayout):
     def __init__(self, **kwargs):
@@ -179,13 +224,45 @@ class MasterControls(MTBoxLayout):
         
         self.add_widget(self.volume)
         self.add_widget(self.dspactive)
-    
-workspace = Workspace(do_rotation = False, auto_bring_to_front = False)
+        
+class ModulePicker(MTWidget):
+    def __init__(self, **kwargs):
+        super(ModulePicker,self).__init__(**kwargs)
+        self.workspace_cb = kwargs.get('workspace_cb')
+        self.touchstarts    = [] # only react to touch input that originated on this widget
+        
+        self.spacing = 4
 
+        self.source_img = MTSvg(filename = 'icons/sl-addSynth+.svg', pos = self.pos)
+        self.effect_img = MTSvg(filename = 'icons/sl-distort+.svg', pos = (self.x + self.source_img.width + self.spacing, self.y))
+        self.controller_img = MTSvg(filename = 'icons/sl-lfo+.svg', pos = (self.effect_img.x + self.source_img.width + self.spacing, self.y))
+        self.output_img = MTSvg(filename = 'icons/sl-speaker.svg', pos = (self.controller_img.x + self.source_img.width + self.spacing, self.y - 10))
+        
+        self.source = ModulePick(filename = 'icons/sl-addSynth+.svg', pos = self.pos, workspace_cb = self.workspace_cb, category = 'source')
+        self.effect = ModulePick(filename = 'icons/sl-distort+.svg', pos = (self.x + self.source.width + self.spacing, self.y), workspace_cb = self.workspace_cb, category = 'effect')
+        self.controller = ModulePick(filename = 'icons/sl-lfo+.svg', pos = (self.effect.x + self.source.width + self.spacing, self.y), workspace_cb = self.workspace_cb, category = 'controller')
+        self.output = ModulePick(filename = 'icons/sl-speaker.svg', pos = (self.controller.x + self.source.width + self.spacing, self.y - 10), workspace_cb = self.workspace_cb, category = 'output')
+                       
+        self.add_widget(self.source_img)
+        self.add_widget(self.effect_img)
+        self.add_widget(self.controller_img)
+        self.add_widget(self.output_img)
+        
+        self.add_widget(self.source)
+        self.add_widget(self.effect)
+        self.add_widget(self.controller)
+        self.add_widget(self.output)
+              
+    
 w = MTWindow(style = {'bg-color': (0,0,0,1)})
+workspace = Workspace(do_rotation = False, auto_bring_to_front = False)
+mastercontrols = MasterControls(pos = (2,2), spacing = 4)
+modulepicker = ModulePicker(pos = (140,2), workspace_cb = workspace) 
+
+
 w.add_widget(workspace)
-mc = MasterControls(pos = (2,2), spacing = 4)
-w.add_widget(mc)
+w.add_widget(mastercontrols)
+w.add_widget(modulepicker)
 
 
 runTouchApp()
