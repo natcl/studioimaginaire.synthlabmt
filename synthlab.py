@@ -33,6 +33,7 @@ class Module(MTSvg):
         self.drag_y = 0
         self.control_connections = []
         self.signal_connections = []
+        self.parents = []
         
     def draw(self):
         if self.mode == 'draw_connection':
@@ -86,6 +87,19 @@ class Module(MTSvg):
             return True
         else:
             return False
+    
+    def remove_module(self):
+        if self.parents != []:
+            for parent in self.parents:
+                for index, module in enumerate(parent.signal_connections):
+                    if module[0] == self:
+                        parent.signal_connections.pop(index)
+                for index, module in enumerate(parent.control_connections):
+                    if module[0] == self:
+                        parent.control_connections.pop(index)
+        self.parent.modules.remove(self)
+        self.parent.remove_widget(self)
+        osc.sendMsg("/delete", [self.category, self.instance], host, port)
         
     def on_touch_down(self, touch):
         #Delete connections
@@ -103,6 +117,10 @@ class Module(MTSvg):
         
         if self.collide_point(touch.x,touch.y):
             self.touchstarts.append(touch.id)
+            
+            if touch.is_double_tap:
+                self.remove_module()
+                                
             self.first_x = touch.x
             self.first_y = touch.y
             self.first_pos_x = self.x
@@ -149,6 +167,7 @@ class Module(MTSvg):
                         if inlet:
                             if [m, inlet] not in self.control_connections:
                                 self.control_connections.append([m, inlet])
+                                m.parents.append(self)
                                 osc.sendMsg("/connect", [self.category, self.instance, m.category, m.instance, inlet], host, port)
                     # Signal connections
                     if self.category == 'source' or self.category == 'effect':
@@ -156,9 +175,9 @@ class Module(MTSvg):
                             inlet = 0
                             if [m, inlet] not in self.signal_connections:
                                 self.signal_connections.append([m, inlet])
+                                m.parents.append(self)
                                 osc.sendMsg("/connect", [self.category, self.instance, m.category, m.instance], host, port)
                         
-           
         if touch.id in self.touchstarts:
             self.touchstarts.remove(touch.id)
             self.mode = 'move'
