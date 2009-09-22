@@ -275,17 +275,31 @@ class ModulePicker(MTWidget):
         self.add_widget(self.effect)
         self.add_widget(self.controller)
         self.add_widget(self.output)
+        
+class NoteWidget(MTWidget):
+    def __init__(self, **kwargs):
+        super(NoteWidget,self).__init__(**kwargs)
+        
+    def on_touch_down(self, touch):
+        osc.sendMsg("/note/" + str(touch.id).strip('mouse'), ['on', touch.sx], host, port)
+
+    def on_touch_move(self, touch):
+        osc.sendMsg("/note/" + str(touch.id).strip('mouse'), ['bend', touch.sx], host, port)
+    
+    def on_touch_up(self, touch):
+        osc.sendMsg("/note/" + str(touch.id).strip('mouse'), ['off', touch.sx], host, port)
               
     
 w = MTWindow(style = {'bg-color': (0,0,0,1)})
 workspace = Workspace(do_rotation = False, auto_bring_to_front = False)
 mastercontrols = MasterControls(pos = (2,2), spacing = 4, workspace_cb = workspace)
 modulepicker = ModulePicker(pos = (160,2), workspace_cb = workspace) 
-
+notewidget = NoteWidget(size = (800,600))
 
 w.add_widget(workspace)
 w.add_widget(mastercontrols)
 w.add_widget(modulepicker)
+w.add_widget(notewidget)
 
 
 runTouchApp()
