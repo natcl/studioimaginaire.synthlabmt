@@ -218,6 +218,7 @@ class ModulePick(MTSvg):
             self.pos = self.original_pos
             self.instance_count += 1
             self.touchstarts.remove(touch.id)
+            self.workspace_cb.childrens
             return True
 
 class MasterControls(MTBoxLayout):
