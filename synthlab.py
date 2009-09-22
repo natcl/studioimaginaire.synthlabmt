@@ -11,14 +11,21 @@ class Workspace(MTScatterPlane):
         super(Workspace,self).__init__( **kwargs)
         osc.init()
         self.modules = []
-        #self.modules = [Module(filename = 'icons/sl-addSynth+.svg', category = 'source', instance = 1),
-        #                Module(filename = 'icons/sl-addSynth+.svg', category = 'source', instance = 2),
-        #                Module(filename = 'icons/sl-speaker.svg', category = 'output', instance = 1),
-        #                Module(filename = 'icons/sl-speaker.svg', category = 'output', instance = 2),
-        #                Module(filename = 'icons/sl-distort+.svg', category = 'effect', instance = 1),
-        #                Module(filename = 'icons/sl-lfo+.svg', category = 'controller', instance = 1)]
-        #for m in self.modules:
-        #    self.add_widget(m)
+        
+    def remove_widget(self, widget):
+        if widget.parents != []:
+            for parent in widget.parents:
+                for index, module in enumerate(parent.signal_connections):
+                    if module[0] == widget:
+                        parent.signal_connections.pop(index)
+                for index, module in enumerate(parent.control_connections):
+                    if module[0] == widget:
+                        parent.control_connections.pop(index)
+        self.modules.remove(widget)
+        osc.sendMsg("/delete", [widget.category, widget.instance], host, port)
+        
+        super(Workspace, self).remove_widget(widget)
+
         
         
 class Module(MTSvg):
@@ -87,20 +94,7 @@ class Module(MTSvg):
             return True
         else:
             return False
-    
-    def remove_module(self):
-        if self.parents != []:
-            for parent in self.parents:
-                for index, module in enumerate(parent.signal_connections):
-                    if module[0] == self:
-                        parent.signal_connections.pop(index)
-                for index, module in enumerate(parent.control_connections):
-                    if module[0] == self:
-                        parent.control_connections.pop(index)
-        self.parent.modules.remove(self)
-        self.parent.remove_widget(self)
-        osc.sendMsg("/delete", [self.category, self.instance], host, port)
-        
+            
     def on_touch_down(self, touch):
         #Delete connections
         if touch.is_double_tap:
@@ -119,7 +113,7 @@ class Module(MTSvg):
             self.touchstarts.append(touch.id)
             
             if touch.is_double_tap:
-                self.remove_module()
+                self.parent.remove_widget(self)
                                 
             self.first_x = touch.x
             self.first_y = touch.y
@@ -229,8 +223,10 @@ class ModulePick(MTSvg):
 class MasterControls(MTBoxLayout):
     def __init__(self, **kwargs):
         super(MasterControls,self).__init__(**kwargs)
+        self.workspace_cb = kwargs.get('workspace_cb')
         self.volume = MTSlider(min = 0, max = 1, height = 200)
         self.dspactive = MTToggleButton(label = 'DSP', size = (50,50))
+        self.clear_modules = MTButton(label = 'Clear', size = (50,50))
         @self.volume.event
         def on_value_change(value):
             osc.sendMsg("/master/volume", [value], host, port)
@@ -240,9 +236,14 @@ class MasterControls(MTBoxLayout):
                 osc.sendMsg("/master/dspactive", [1], host, port)
             else:
                 osc.sendMsg("/master/dspactive", [0], host, port)
+        @self.clear_modules.event
+        def on_press(value):
+            for module in self.workspace_cb.modules[:]:
+                self.workspace_cb.remove_widget(module)
         
         self.add_widget(self.volume)
         self.add_widget(self.dspactive)
+        self.add_widget(self.clear_modules)
         
 class ModulePicker(MTWidget):
     def __init__(self, **kwargs):
@@ -275,7 +276,7 @@ class ModulePicker(MTWidget):
     
 w = MTWindow(style = {'bg-color': (0,0,0,1)})
 workspace = Workspace(do_rotation = False, auto_bring_to_front = False)
-mastercontrols = MasterControls(pos = (2,2), spacing = 4)
+mastercontrols = MasterControls(pos = (2,2), spacing = 4, workspace_cb = workspace)
 modulepicker = ModulePicker(pos = (140,2), workspace_cb = workspace) 
 
 
