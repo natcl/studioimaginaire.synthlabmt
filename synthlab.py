@@ -212,7 +212,10 @@ class ModulePick(MTSvg):
             
     def on_touch_up(self, touch):                     
         if touch.id in self.touchstarts:
-            self.workspace_cb.modules.append(Module(pos = (touch.x, touch.y), filename = self.icons[self.category], category = self.category, instance = self.instance_count))
+            xoffset = touch.x - self.x
+            yoffset = touch.y - self.y
+            xx, yy = self.workspace_cb.to_local(touch.x, touch.y)
+            self.workspace_cb.modules.append(Module(pos = (xx - xoffset, yy - yoffset) , filename = self.icons[self.category], category = self.category, instance = self.instance_count))
             self.workspace_cb.add_widget(self.workspace_cb.modules[len(self.workspace_cb.modules)-1])
             osc.sendMsg("/create", [self.category, self.instance_count], host, port)
             self.pos = self.original_pos
@@ -277,7 +280,7 @@ class ModulePicker(MTWidget):
 w = MTWindow(style = {'bg-color': (0,0,0,1)})
 workspace = Workspace(do_rotation = False, auto_bring_to_front = False)
 mastercontrols = MasterControls(pos = (2,2), spacing = 4, workspace_cb = workspace)
-modulepicker = ModulePicker(pos = (140,2), workspace_cb = workspace) 
+modulepicker = ModulePicker(pos = (160,2), workspace_cb = workspace) 
 
 
 w.add_widget(workspace)
