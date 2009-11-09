@@ -279,12 +279,15 @@ class ModulePicker(MTWidget):
 class NoteWidget(MTWidget):
     def __init__(self, **kwargs):
         super(NoteWidget,self).__init__(**kwargs)
+        self.first_touch = None
         
     def on_touch_down(self, touch):
         osc.sendMsg("/note/" + str(touch.id).strip('mouse'), ['on', touch.sx], host, port)
+        self.first_touch = touch.sx
 
     def on_touch_move(self, touch):
         osc.sendMsg("/note/" + str(touch.id).strip('mouse'), ['bend', touch.sx], host, port)
+        print self.first_touch - touch.sx
     
     def on_touch_up(self, touch):
         osc.sendMsg("/note/" + str(touch.id).strip('mouse'), ['off', touch.sx], host, port)
