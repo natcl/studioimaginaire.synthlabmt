@@ -17,7 +17,7 @@ class Note(MTButton):
         self.push_handlers(on_release =  self.note_off)
         self.touchstarts = [] # only react to touch input that originated on this widget
         self.first_touch = None
-	if self.note_number % 12 in [1,3,6,8,10]:
+        if self.note_number % 12 in [1,3,6,8,10]:
             self.style['bg-color'] = (1,1,1,0.5)
 
     def note_on(self, touch):
@@ -25,7 +25,7 @@ class Note(MTButton):
             osc.sendMsg("/note", [self.note_number, 'on', 0., touch.sy], host, port)
         else:
             osc.sendMsg("/note", [self.note_number, 'on', touch.sx, touch.sy], host, port)
-        touch.userdata['first_touch'] = touch.sx
+        touch.userdata['first_touch'] = touch.x - self.x
 
     def note_off(self, touch):
         if self.round_notes:
@@ -44,6 +44,9 @@ class Note(MTButton):
         if touch.id in self.touchstarts:
             if self.round_notes:
                 osc.sendMsg("/note", [self.note_number, 'bend', touch.sx - touch.userdata['first_touch'], touch.sy], host, port)
+                #print self.parent.width
+                #print self.parent.note_width*self.parent.note_range
+                print touch.x - self.x, scale(touch.x - self.x, 0, 720, 0., 1.)
             else:
                 osc.sendMsg("/note", [self.note_number, 'bend', touch.sx, touch.sy], host, port)
 
@@ -67,6 +70,30 @@ class NoteContainer(MTBoxLayout):
 
         for note in range(self.note_range):
             self.add_widget(Note(width = self.note_width, height = self.height, note_number = self.base_note + note))
+            
+def scale(_input,input_min,input_max,output_min,output_max):
+
+    range_input = input_max - input_min
+    range_output = output_max - output_min
+    result = (_input - input_min) * range_output / range_input + output_min
+
+    if (input_min > input_max and output_min > output_max) or (output_min > output_max and input_min < input_max):
+        if result > output_min:
+            return output_min
+        elif result < output_max:
+            return output_max
+        else:
+            return result
+
+
+    if (input_min < input_max and output_min < output_max) or (output_min < output_max and input_min > input_max):
+        if result > output_max:
+            return output_max
+        elif result < output_min:
+            return output_min
+        else:
+            return result
+
 
 if __name__ == '__main__':
     w = MTWindow(style = {'bg-color': (0,0,0,1)})
