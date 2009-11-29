@@ -25,7 +25,8 @@ class Note(MTButton):
             osc.sendMsg("/note", [self.note_number, 'on', 0., touch.sy], host, port)
         else:
             osc.sendMsg("/note", [self.note_number, 'on', touch.sx, touch.sy], host, port)
-        touch.userdata['first_touch'] = touch.x - self.x
+        touch.userdata['first_touch'] = touch.sx
+        #touch.userdata['first_touch'] = touch.x - self.x
 
     def note_off(self, touch):
         if self.round_notes:
@@ -46,7 +47,7 @@ class Note(MTButton):
                 osc.sendMsg("/note", [self.note_number, 'bend', touch.sx - touch.userdata['first_touch'], touch.sy], host, port)
                 #print self.parent.width
                 #print self.parent.note_width*self.parent.note_range
-                print touch.x - self.x, scale(touch.x - self.x, 0, 720, 0., 1.)
+                #print touch.x - self.x, scale(touch.x - self.x, 0, 720, 0., 1.)
             else:
                 osc.sendMsg("/note", [self.note_number, 'bend', touch.sx, touch.sy], host, port)
 
