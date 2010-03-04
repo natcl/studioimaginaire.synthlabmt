@@ -293,7 +293,8 @@ class NoteWidget(MTWidget):
         osc.sendMsg("/note/" + str(touch.id).strip('mouse'), ['off', touch.sx], host, port)
               
     
-w = MTWindow(style = {'bg-color': (0,0,0,1)})
+w = MTWindow()
+w.style['bg-color'] = (0,0,0,1)
 workspace = Workspace(do_rotation = False, auto_bring_to_front = False)
 mastercontrols = MasterControls(pos = (2,2), spacing = 4, workspace_cb = workspace)
 modulepicker = ModulePicker(pos = (160,2), workspace_cb = workspace) 
